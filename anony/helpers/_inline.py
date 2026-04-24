@@ -147,12 +147,6 @@ class Inline:
                 self.ikb(text=lang["support"], url=config.SUPPORT_CHAT),
                 self.ikb(text=lang["channel"], url=config.SUPPORT_CHANNEL),
             ],
-            [
-                self.ikb(
-                    text=lang["source"],
-                    url=config.SOURCE_CODE,
-                )
-            ],
         ]
         if not private:
             rows.insert(
