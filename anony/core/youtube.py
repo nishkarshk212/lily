@@ -240,27 +240,32 @@ class YouTube:
         # Try using NextGen API first
         if config.API_TOKEN and config.API_BASE_URL:
             try:
-                api_url = f"{config.API_BASE_URL}/api/song"
+                api_url = f"{config.API_BASE_URL}/stream"
                 params = {
-                    "url": url,
-                    "api_token": config.API_TOKEN
+                    "q": url,
+                    "token": config.API_TOKEN
                 }
                 
+                logger.info(f"Trying NextGen API: {api_url}")
                 async with aiohttp.ClientSession() as session:
                     async with session.get(api_url, params=params, timeout=aiohttp.ClientTimeout(total=60)) as response:
                         if response.status == 200:
                             data = await response.json()
-                            if data.get("status") and "data" in data:
-                                download_url = data["data"].get("url") or data["data"].get("link") or data["data"].get("download_url")
-                                if download_url:
-                                    # Download the file from the API response
-                                    async with session.get(download_url, timeout=aiohttp.ClientTimeout(total=300)) as dl_response:
-                                        if dl_response.status == 200:
-                                            with open(filename, "wb") as f:
-                                                async for chunk in dl_response.content.iter_chunked(8192):
-                                                    f.write(chunk)
-                                            if Path(filename).exists():
-                                                return filename
+                            logger.info(f"NextGen API response received")
+                            if "stream_url" in data:
+                                stream_url = data["stream_url"]
+                                logger.info(f"Downloading from NextGen API stream URL")
+                                # Download the file from the API response
+                                async with session.get(stream_url, timeout=aiohttp.ClientTimeout(total=300)) as dl_response:
+                                    if dl_response.status == 200:
+                                        with open(filename, "wb") as f:
+                                            async for chunk in dl_response.content.iter_chunked(8192):
+                                                f.write(chunk)
+                                        if Path(filename).exists():
+                                            logger.info(f"Successfully downloaded via NextGen API: {filename}")
+                                            return filename
+                            else:
+                                logger.warning(f"NextGen API error: {data}")
             except Exception as ex:
                 logger.warning(f"NextGen API download failed: {ex}, falling back to yt-dlp")
 
