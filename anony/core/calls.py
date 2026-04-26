@@ -51,11 +51,6 @@ class TgCall(PyTgCalls):
     ) -> None:
         client = await db.get_assistant(chat_id)
         _lang = await lang.get_lang(chat_id)
-        _thumb = (
-            await thumb.generate(media)
-            if isinstance(media, Track)
-            else config.DEFAULT_THUMB
-        ) if config.THUMB_GEN else None
 
         if not media.file_path:
             if isinstance(media, Track):
@@ -86,6 +81,14 @@ class TgCall(PyTgCalls):
                 stream=stream,
                 config=types.GroupCallConfig(auto_start=False),
             )
+            
+            # Generate thumbnail after starting play to reduce latency
+            _thumb = (
+                await thumb.generate(media)
+                if isinstance(media, Track)
+                else config.DEFAULT_THUMB
+            ) if config.THUMB_GEN else None
+
             if not seek_time:
                 media.time = 1
                 await db.add_call(chat_id)
@@ -221,7 +224,7 @@ class TgCall(PyTgCalls):
     async def boot(self) -> None:
         PyTgCallsSession.notice_displayed = True
         for ub in userbot.clients:
-            client = PyTgCalls(ub, cache_duration=100)
+            client = PyTgCalls(ub, cache_duration=20)
             await client.start()
             self.clients.append(client)
             await self.decorators(client)

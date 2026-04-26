@@ -315,12 +315,16 @@ class YouTube:
             "geo_bypass": True,
             "nocheckcertificate": True,
             "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "extract_flat": "in_playlist",
+            "skip_download": True,
         }
 
         def _get():
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 try:
                     info = ydl.extract_info(url, download=False)
+                    if "entries" in info:
+                        return info["entries"][0].get("url")
                     return info.get("url")
                 except Exception as ex:
                     logger.warning(f"Failed to get stream URL: {ex}")
