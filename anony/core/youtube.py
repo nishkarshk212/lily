@@ -310,10 +310,11 @@ class YouTube:
         ydl_opts = {
             "quiet": True,
             "no_warnings": True,
-            "format": "bestaudio[ext=webm][acodec=opus]" if not video else "bestvideo[height<=?720]+bestaudio",
+            "format": "bestaudio/best" if not video else "bestvideo[height<=?720]+bestaudio/best",
             "noplaylist": True,
             "geo_bypass": True,
             "nocheckcertificate": True,
+            "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
         }
 
         def _get():

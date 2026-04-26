@@ -60,6 +60,9 @@ class TgCall(PyTgCalls):
         if not media.file_path:
             if isinstance(media, Track):
                 media.file_path = await yt.get_stream_url(media.id, video=media.video)
+                if not media.file_path:
+                    # Fallback to download if streaming URL fails
+                    media.file_path = await yt.download(media.id, video=media.video)
             
             if not media.file_path:
                 await message.edit_text(_lang["error_no_file"].format(config.SUPPORT_CHAT))
@@ -75,7 +78,7 @@ class TgCall(PyTgCalls):
                 if media.video
                 else types.MediaStream.Flags.IGNORE
             ),
-            ffmpeg_parameters=f"-ss {seek_time} -loglevel panic -threads 0" if seek_time > 1 else "-loglevel panic -threads 0",
+            ffmpeg_parameters=f"-ss {seek_time}" if seek_time > 1 else None,
         )
         try:
             await client.play(
