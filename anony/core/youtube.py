@@ -304,3 +304,25 @@ class YouTube:
             return filename
 
         return await asyncio.to_thread(_download)
+
+    async def get_stream_url(self, video_id: str, video: bool = False) -> str | None:
+        url = self.base + video_id
+        ydl_opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "format": "bestaudio[ext=webm][acodec=opus]" if not video else "bestvideo[height<=?720]+bestaudio",
+            "noplaylist": True,
+            "geo_bypass": True,
+            "nocheckcertificate": True,
+        }
+
+        def _get():
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                try:
+                    info = ydl.extract_info(url, download=False)
+                    return info.get("url")
+                except Exception as ex:
+                    logger.warning(f"Failed to get stream URL: {ex}")
+                    return None
+
+        return await asyncio.to_thread(_get)

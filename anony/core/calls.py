@@ -58,8 +58,12 @@ class TgCall(PyTgCalls):
         ) if config.THUMB_GEN else None
 
         if not media.file_path:
-            await message.edit_text(_lang["error_no_file"].format(config.SUPPORT_CHAT))
-            return await self.play_next(chat_id)
+            if isinstance(media, Track):
+                media.file_path = await yt.get_stream_url(media.id, video=media.video)
+            
+            if not media.file_path:
+                await message.edit_text(_lang["error_no_file"].format(config.SUPPORT_CHAT))
+                return await self.play_next(chat_id)
 
         stream = types.MediaStream(
             media_path=media.file_path,
@@ -71,7 +75,7 @@ class TgCall(PyTgCalls):
                 if media.video
                 else types.MediaStream.Flags.IGNORE
             ),
-            ffmpeg_parameters=f"-ss {seek_time}" if seek_time > 1 else None,
+            ffmpeg_parameters=f"-ss {seek_time} -loglevel panic -threads 0" if seek_time > 1 else "-loglevel panic -threads 0",
         )
         try:
             await client.play(
@@ -166,7 +170,7 @@ class TgCall(PyTgCalls):
         _lang = await lang.get_lang(chat_id)
         msg = await app.send_message(chat_id=chat_id, text=_lang["play_next"])
         if not media.file_path:
-            media.file_path = await yt.download(media.id, video=media.video)
+            media.file_path = await yt.get_stream_url(media.id, video=media.video)
             if not media.file_path:
                 await self.play_next(chat_id)
                 return await msg.edit_text(
@@ -188,6 +192,20 @@ class TgCall(PyTgCalls):
             if isinstance(update, types.StreamEnded):
                 if update.stream_type == types.StreamEnded.Type.AUDIO:
                     await self.play_next(update.chat_id)
+            elif isinstance(update, types.ParticipantUpdated):
+                if update.status == types.ParticipantUpdated.Status.JOINED:
+                    try:
+                        user = await app.get_users(update.user_id)
+                        text = (
+                            f"<blockquote>"
+                            f"ɴᴀᴍᴇ : {user.mention}\n"
+                            f"ᴜꜱᴇʀ ɪᴅ : <code>{user.id}</code>\n"
+                            f"ᴇɴᴊᴏʏ ɪɴ ᴠᴏɪᴄᴇ ᴄʜᴀᴛ"
+                            f"</blockquote>"
+                        )
+                        await app.send_message(update.chat_id, text)
+                    except Exception:
+                        pass
             elif isinstance(update, types.ChatUpdate):
                 if update.status in [
                     types.ChatUpdate.Status.KICKED,
